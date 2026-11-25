@@ -1,0 +1,7 @@
+version: "2"
+
+linters:
+  exclusions:
+    paths:
+      # Wails-generated platform scaffolding (iOS/Android stubs, packaging).
+      - build

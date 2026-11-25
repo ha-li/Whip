@@ -1,6 +1,6 @@
-module changeme
+module github.com/ha-li/Whip
 
-go 1.26.0
+go 1.27.4
 
 require github.com/wailsapp/wails/v3 v3.0.0
 
