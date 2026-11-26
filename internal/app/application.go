@@ -5,6 +5,8 @@ package app
 import (
 	"io/fs"
 
+	"github.com/ha-li/Whip/internal/app/tray"
+	"github.com/ha-li/Whip/internal/app/version"
 	"github.com/ha-li/Whip/internal/user"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -12,14 +14,17 @@ import (
 // New creates the Wails application, its main window and the menu bar icon.
 // assets holds the built frontend (frontend/dist), embedded by package main
 // because go:embed can't reach files outside its own package directory.
+// v is the app version, shown in the UI.
 // Call Run on the result to start the app.
-func New(assets fs.FS) *application.App {
+func New(assets fs.FS, v version.Version) *application.App {
 	a := application.New(application.Options{
 		Name:        "Whip",
 		Description: "An agentic IDE",
 		// Services are Go structs whose exported methods the frontend can call.
 		Services: []application.Service{
 			application.NewService(user.New()),
+			application.NewService(NewMenu()),
+			application.NewService(version.NewAbout(v)),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
@@ -32,7 +37,7 @@ func New(assets fs.FS) *application.App {
 	window := newMainWindow(a)
 
 	// Show the Whip icon in the menu bar while the app is running.
-	newTray(a, window)
+	tray.New(a, window)
 
 	return a
 }

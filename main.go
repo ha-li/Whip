@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/ha-li/Whip/internal/app"
+	"github.com/ha-li/Whip/internal/app/version"
 )
 
 // The built frontend, embedded into the binary. It has to live in package
@@ -14,7 +15,11 @@ import (
 var assets embed.FS
 
 func main() {
-	if err := app.New(assets).Run(); err != nil {
+	v, err := version.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := app.New(assets, v).Run(); err != nil {
 		log.Fatal(err)
 	}
 }
