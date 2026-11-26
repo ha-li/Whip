@@ -13,25 +13,21 @@ import (
 //go:embed icon.png
 var icon []byte
 
-// New adds the menu bar icon. Clicking it opens a menu to bring the main
-// window to the front or quit the app.
-func New(a *application.App, window *application.WebviewWindow) *application.SystemTray {
+// New adds the menu bar icon, with name as its tooltip. Clicking it opens a
+// menu to bring the app to the front (by calling show) or quit it.
+func New(a *application.App, name string, show func()) *application.SystemTray {
 	menu := application.NewMenu()
-	menu.Add("Show Whip").OnClick(func(*application.Context) {
-		if window.IsMinimised() {
-			window.UnMinimise()
-		}
-		window.Show()
-		window.Focus()
+	menu.Add("Show " + name).OnClick(func(*application.Context) {
+		show()
 	})
 	menu.AddSeparator()
-	menu.Add("Quit Whip").OnClick(func(*application.Context) {
+	menu.Add("Quit " + name).OnClick(func(*application.Context) {
 		a.Quit()
 	})
 
 	t := a.SystemTray.New()
 	t.SetTemplateIcon(icon)
-	t.SetTooltip("Whip")
+	t.SetTooltip(name)
 	t.SetMenu(menu)
 	// With no window attached, a left click opens the menu too.
 	return t

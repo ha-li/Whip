@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react'
-import { HomeIcon, StocksIcon } from './icons'
+import { HomeIcon, NotesIcon } from './icons'
 import Home from './pages/Home'
-import Stocks from './pages/Stocks'
+import Notes from './pages/Notes'
 
 // Tab is one entry in the left-hand menu.
 export type Tab = {
@@ -19,5 +19,5 @@ export type Tab = {
 // To add a tab, add its page under pages/, its icon in icons.tsx, and an entry here.
 export const tabs: readonly [Tab, ...Tab[]] = [
   { id: 'home', label: 'Home', Icon: HomeIcon, Page: Home },
-  { id: 'stocks', label: 'Stocks', Icon: StocksIcon, Page: Stocks },
+  { id: 'notes', label: 'Notes', Icon: NotesIcon, Page: Notes },
 ]

@@ -1,51 +1,76 @@
-// Package config owns Whip's per-user directories and its settings file,
-// ~/Library/Application Support/Whip/config.yml.
+// Package config owns an app's per-user config directory and the settings
+// files in it. Package app names the directory and creates the current user's Store
+// with NewStore("Whip"), then passes it to the modules that need settings.
 //
-// The file can hold secrets (API keys), so it is written readable only by the
-// current user. Whip rewrites the whole file on every change; comments and keys
-// it doesn't know about are not kept.
+// Each module owns its own settings file: it defines the file's contents and
+// opens the file from the Store with Open, getting back a *File to read and
+// update. Neither this package nor this package's other users know what a
+// module's file holds. Files that aren't settings files, such as the
+// database, are claimed with Store.Reserve.
+//
+// # Adding a settings file
+//
+// To give a module, say editor, its own file editor.yml, first define the
+// file's contents in the module as a struct with yaml tags. Its zero value is
+// what Load returns before the file exists, so make that a sensible default:
+//
+//	package editor
+//
+//	type Settings struct {
+//		Theme    string `yaml:"theme"`
+//		FontSize int    `yaml:"font_size"`
+//	}
+//
+// Then have the module take the *config.Store and open the file from it.
+// Opening the same name again returns the same File, so Updates from
+// different places stay serialized; opening it with a different type is an
+// error:
+//
+//	func New(store *config.Store) (*Editor, error) {
+//		f, err := config.Open[Settings](store, "editor.yml")
+//		...
+//	}
+//
+// Read it with Load and change it with Update, which rewrites the whole file.
+// The file is created on the first Update, readable only by the user, so it
+// may hold secrets:
+//
+//	s, err := f.Load()
+//	err = f.Update(func(s *editor.Settings) { s.Theme = "dark" })
+//
+// Tests shouldn't touch the user's real files: build the Store on t.TempDir()
+// with NewStoreWith and WithConfigDir, and pass it to the module.
 package config
 
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sync"
-
-	"go.yaml.in/yaml/v3"
 )
 
-// Config is the contents of config.yml.
-type Config struct {
-	AlphaVantage AlphaVantage `yaml:"alphavantage"`
-}
-
-// AlphaVantage holds the settings for the Alpha Vantage market data API.
-type AlphaVantage struct {
-	APIKey string `yaml:"api_key"`
-}
-
-// appDir names Whip's directory inside the user's config and cache directories.
-const appDir = "Whip"
-
-// Store reads and writes config.yml and knows Whip's cache directory.
-// It is safe for concurrent use.
+// Store knows an app's config directory and hands out the files in it. Create
+// one per directory (NewStore for the current user, NewStoreWith in tests) and
+// share it: a second Store on the same directory would hand out
+// separate Files whose Updates aren't serialized with the first's. It is safe
+// for concurrent use.
 type Store struct {
-	path     string // ~/Library/Application Support/Whip/config.yml
-	cacheDir string // ~/Library/Caches/Whip
-	mu       sync.Mutex
+	configDir string // e.g. ~/Library/Application Support/Whip
+
+	mu    sync.Mutex
+	files map[string]any // file name -> *File[T] (see Open) or reserved (see Reserve)
 }
 
-// NewStore returns the Store for the current user: config.yml in
-// ~/Library/Application Support/Whip and the cache in ~/Library/Caches/Whip.
-func NewStore() (*Store, error) {
-	return NewStoreWith(WithDefaultConfigDir(), WithDefaultCacheDir())
+// NewStore returns the Store for the current user, keeping app's files in a
+// directory named app inside the user's config directory: for "Whip",
+// ~/Library/Application Support/Whip.
+func NewStore(app string) (*Store, error) {
+	return NewStoreWith(WithDefaultConfigDir(app))
 }
 
-// NewStoreWith returns a Store whose directories are set by opts (see Option),
-// e.g. temporary directories in tests. Both a config directory and a cache
-// directory are required. config.yml is created on first write.
+// NewStoreWith returns a Store whose directory is set by opts (see Option),
+// e.g. a temporary directory in tests. A config directory is required.
+// Settings files are created on first write.
 func NewStoreWith(opts ...Option) (*Store, error) {
 	var d dirs
 	for _, opt := range opts {
@@ -56,78 +81,56 @@ func NewStoreWith(opts ...Option) (*Store, error) {
 	if d.config == "" {
 		return nil, errors.New("config directory not set (use NewStore, or NewStoreWith and WithConfigDir)")
 	}
-	if d.cache == "" {
-		return nil, errors.New("cache directory not set (use NewStore, or NewStoreWith and WithCacheDir)")
+	return &Store{configDir: d.config, files: map[string]any{}}, nil
+}
+
+// Open returns the settings file name (e.g. "editor.yml") in s's config
+// directory, decoded as T. Opening the same name again returns the same File, so Updates to it stay
+// serialized; opening it with a different T is an error. name must be a plain
+// file name, not a path.
+func Open[T any](s *Store, name string) (*File[T], error) {
+	if !isPlainName(name) {
+		return nil, fmt.Errorf("settings file name %q is not a plain file name", name)
 	}
-	return &Store{path: filepath.Join(d.config, "config.yml"), cacheDir: d.cache}, nil
-}
 
-// CacheDir returns Whip's cache directory, ~/Library/Caches/Whip. Its contents
-// can be deleted at any time; callers create it when they first write.
-func (s *Store) CacheDir() string {
-	return s.cacheDir
-}
-
-// Load returns the saved settings, or the zero Config if the file doesn't exist.
-func (s *Store) Load() (Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.load()
+	if f, ok := s.files[name]; ok {
+		tf, ok := f.(*File[T])
+		if !ok {
+			return nil, fmt.Errorf("settings file %s is already open as %T", name, f)
+		}
+		return tf, nil
+	}
+	f := &File[T]{path: filepath.Join(s.configDir, name)}
+	s.files[name] = f
+	return f, nil
 }
 
-// Update applies change to the saved settings and writes them back.
-func (s *Store) Update(change func(*Config)) error {
+// reserved marks a file name in the config directory claimed with Reserve.
+type reserved struct{}
+
+// Reserve claims name in s's config directory for a file that isn't a
+// settings file, such as a database, and returns its path. The caller owns
+// the file and creates it. A name can be claimed once, by either Reserve or
+// Open: claiming it again is an error, so two owners can't share a file.
+// name must be a plain file name, not a path.
+func (s *Store) Reserve(name string) (string, error) {
+	if !isPlainName(name) {
+		return "", fmt.Errorf("file name %q is not a plain file name", name)
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
-	c, err := s.load()
-	if err != nil {
-		return err
+	if _, ok := s.files[name]; ok {
+		return "", fmt.Errorf("file %s in the config directory is already claimed", name)
 	}
-	change(&c)
-	return s.save(c)
+	s.files[name] = reserved{}
+	return filepath.Join(s.configDir, name), nil
 }
 
-func (s *Store) load() (Config, error) {
-	var c Config
-	b, err := os.ReadFile(s.path)
-	if errors.Is(err, os.ErrNotExist) {
-		return c, nil
-	}
-	if err != nil {
-		return c, fmt.Errorf("read %s: %w", s.path, err)
-	}
-	if err := yaml.Unmarshal(b, &c); err != nil {
-		return c, fmt.Errorf("parse %s: %w", s.path, err)
-	}
-	return c, nil
-}
-
-// save writes c to a temporary file and renames it into place, so a crash
-// never leaves a half-written config.
-func (s *Store) save(c Config) error {
-	b, err := yaml.Marshal(c)
-	if err != nil {
-		return fmt.Errorf("encode config: %w", err)
-	}
-	dir := filepath.Dir(s.path)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return fmt.Errorf("create %s: %w", dir, err)
-	}
-	tmp, err := os.CreateTemp(dir, ".config-*.yml") // created with mode 0600
-	if err != nil {
-		return fmt.Errorf("write config: %w", err)
-	}
-	defer func() { _ = os.Remove(tmp.Name()) }() // no-op after a successful rename
-	if _, err := tmp.Write(b); err != nil {
-		_ = tmp.Close()
-		return fmt.Errorf("write config: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("write config: %w", err)
-	}
-	if err := os.Rename(tmp.Name(), s.path); err != nil {
-		return fmt.Errorf("write config: %w", err)
-	}
-	return nil
+// isPlainName reports whether name is a single path element: not empty, not
+// "." or "..", and without separators.
+func isPlainName(name string) bool {
+	return name != "" && name != "." && name != ".." && filepath.Base(name) == name
 }

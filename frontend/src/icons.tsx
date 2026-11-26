@@ -13,11 +13,12 @@ const iconProps = {
   className: 'icon',
 };
 
-export function StocksIcon() {
+export function NotesIcon() {
   return (
     <svg {...iconProps}>
-      <path d="M3 3v17a1 1 0 0 0 1 1h17" />
-      <path d="m7 15 4-4 3 3 6-7" />
+      <path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+      <path d="M14 3v5h5" />
+      <path d="M8.5 13h7M8.5 17h5" />
     </svg>
   );
 }
