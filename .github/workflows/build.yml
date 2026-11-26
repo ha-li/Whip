@@ -1,0 +1,51 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # adds a "Run workflow" button on the Actions tab
+
+# Cancel an in-progress run when a newer commit is pushed to the same branch/PR.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    name: Test and build (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # Keep in step with the github.com/wailsapp/wails/v3 version in go.mod.
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0
+
+      # ./internal/... only: package main needs frontend/dist, which the build creates.
+      - name: Test
+        run: go test -race ./internal/...
+
+      - name: Build universal DMG
+        run: make dmg
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: Whip-dmg
+          path: bin/Whip.dmg
+          if-no-files-found: error
