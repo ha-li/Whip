@@ -5,7 +5,6 @@ package app
 import (
 	"io/fs"
 
-	"github.com/ha-li/Whip/internal/tray"
 	"github.com/ha-li/Whip/internal/user"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -33,7 +32,7 @@ func New(assets fs.FS) *application.App {
 	window := newMainWindow(a)
 
 	// Show the Whip icon in the menu bar while the app is running.
-	tray.New(a, window)
+	newTray(a, window)
 
 	return a
 }
