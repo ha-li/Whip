@@ -1,0 +1,9 @@
+/* ----- Home ---------------------------------------------------------------- */
+.home-greeting {
+    margin: 24px 0 0;
+    font-size: 2.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+.home-name { animation: fade-in 0.3s ease; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }

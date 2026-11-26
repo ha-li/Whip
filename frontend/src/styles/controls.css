@@ -1,0 +1,53 @@
+/* Shared form controls (classes used by several pages). Imported by main.tsx
+   before any component, so component sheets can override these. */
+
+/* ----- Shared controls ---------------------------------------------------- */
+.text-input {
+    height: 32px;
+    padding: 0 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font: inherit;
+    -webkit-user-select: text;
+    user-select: text;
+}
+.text-input:focus-visible { outline: 2px solid var(--color-text); outline-offset: -1px; }
+.button {
+    height: 32px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 6px;
+    background: var(--color-text);
+    color: var(--color-bg);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+.button:disabled { opacity: 0.4; cursor: default; }
+.button:focus-visible { outline: 2px solid var(--color-text); outline-offset: 2px; }
+.link-button {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.segmented { display: inline-flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--color-hover); }
+.segmented-item {
+    min-width: 40px;
+    height: 26px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--color-text-muted);
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.segmented-item[aria-pressed="true"] { background: var(--color-surface); color: var(--color-text); box-shadow: 0 0 0 1px var(--color-border); }
+.segmented-item:focus-visible { outline: 2px solid var(--color-text); outline-offset: -2px; }

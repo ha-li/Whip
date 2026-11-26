@@ -1,3 +1,5 @@
+import './icons.css'
+
 // Menu icons: 24×24 line icons that inherit the current text colour.
 
 const iconProps = {
@@ -10,6 +12,15 @@ const iconProps = {
   'aria-hidden': true,
   className: 'icon',
 };
+
+export function StocksIcon() {
+  return (
+    <svg {...iconProps}>
+      <path d="M3 3v17a1 1 0 0 0 1 1h17" />
+      <path d="m7 15 4-4 3 3 6-7" />
+    </svg>
+  );
+}
 
 export function HomeIcon() {
   return (

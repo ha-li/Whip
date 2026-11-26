@@ -1,0 +1,15 @@
+/* ----- Stocks --------------------------------------------------------------- */
+.stocks { max-width: 960px; }
+.stocks-row { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+.stocks-key .text-input { width: 320px; }
+.stocks-symbol { width: 200px; text-transform: uppercase; }
+.stocks-change-key { margin-left: auto; font-size: 12.5px; color: var(--color-text-muted); }
+.stocks-error { margin: 12px 0 0; color: var(--color-text); -webkit-user-select: text; user-select: text; }
+.stocks-error::before { content: "⚠ "; }
+.stocks-result { margin-top: 24px; transition: opacity 0.15s; }
+.stocks-result.is-loading { opacity: 0.5; }
+.stocks-quote { margin-bottom: 16px; -webkit-user-select: text; user-select: text; }
+.stocks-quote-symbol { margin: 0; font-size: 1rem; font-weight: 600; color: var(--color-text-muted); }
+.stocks-quote-price { margin-top: 2px; font-size: 2.25rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.stocks-quote-change { font-weight: 600; font-variant-numeric: tabular-nums; }
+.stocks-quote-asof { margin: 4px 0 0; font-size: 12.5px; color: var(--color-text-muted); }

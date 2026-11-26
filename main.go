@@ -19,7 +19,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := app.New(assets, v).Run(); err != nil {
+	a, err := app.New(assets, v)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := a.Run(); err != nil {
 		log.Fatal(err)
 	}
 }

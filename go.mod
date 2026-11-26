@@ -2,7 +2,10 @@ module github.com/ha-li/Whip
 
 go 1.27.4
 
-require github.com/wailsapp/wails/v3 v3.0.0
+require (
+	github.com/wailsapp/wails/v3 v3.0.0
+	go.yaml.in/yaml/v3 v3.0.4
+)
 
 require (
 	github.com/adrg/xdg v0.5.3 // indirect

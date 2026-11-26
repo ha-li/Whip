@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { About } from '../bindings/github.com/ha-li/Whip/internal/app/version'
 import { tabs } from './tabs'
+import './App.css'
 
 function App() {
   const [activeId, setActiveId] = useState(tabs[0].id);

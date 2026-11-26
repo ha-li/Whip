@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { User } from '../../bindings/github.com/ha-li/Whip/internal/user'
+import './Home.css'
 
 function Home() {
   const [name, setName] = useState<string | null>(null);
