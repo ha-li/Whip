@@ -1,13 +1,13 @@
 [Desktop Entry]
 Version=1.0
-Name=My Product
-Comment=A Whip application
+Name=Whip
+Comment=A agentic IDE for whipping up stuff
 # The Exec line includes %u to pass the URL to the application
-Exec=/usr/local/bin/whip %u
+Exec=/usr/local/bin/Whip %u
 Terminal=false
 Type=Application
-Icon=whip
+Icon=Whip
 Categories=Utility;
-StartupWMClass=whip
+StartupWMClass=Whip
 
  

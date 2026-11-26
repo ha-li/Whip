@@ -3,26 +3,26 @@
 #
 # The lines below are called `modelines`. See `:help modeline`
 
-name: "whip"
+name: "Whip"
 arch: ${GOARCH}
 platform: "linux"
-version: "0.1.0"
+version: "0.0.1"
 section: "default"
 priority: "extra"
 maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
-description: "A Whip application"
-vendor: "My Company"
+description: "A agentic IDE for whipping up stuff"
+vendor: "Gecko Inc"
 homepage: "https://wails.io"
 license: "MIT"
 release: "1"
 
 contents:
-  - src: "./bin/whip"
-    dst: "/usr/local/bin/whip"
+  - src: "./bin/Whip"
+    dst: "/usr/local/bin/Whip"
   - src: "./build/appicon.png"
-    dst: "/usr/share/icons/hicolor/128x128/apps/whip.png"
-  - src: "./build/linux/whip.desktop"
-    dst: "/usr/share/applications/whip.desktop"
+    dst: "/usr/share/icons/hicolor/128x128/apps/Whip.png"
+  - src: "./build/linux/Whip.desktop"
+    dst: "/usr/share/applications/Whip.desktop"
 
 # Default dependencies for the GTK4 + WebKitGTK 6.0 stack (Ubuntu 24.04+ / Debian 13+)
 depends:
