@@ -1,7 +1,15 @@
 version: "2"
 
 linters:
-  exclusions:
-    paths:
-      # Wails-generated platform scaffolding (iOS/Android stubs, packaging).
-      - build
+  # On top of the standard set (errcheck, govet, ineffassign, staticcheck, unused).
+  enable:
+    - unparam # unused function parameters, and parameters that always get the same value
+    - gochecknoglobals # package-level variables (go:embed, regexp.MustCompile and Err* are allowed)
+
+  settings:
+    # Dead-code detection. unused only reports unexported identifiers; exported
+    # ones that nothing calls need whole-program analysis (golang.org/x/tools/cmd/deadcode).
+    unused:
+      field-writes-are-uses: false # a field that is written but never read is dead
+      exported-fields-are-used: false # don't assume exported struct fields are used
+      local-variables-are-used: false # a local that is assigned but never read is dead

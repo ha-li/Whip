@@ -1,11 +1,11 @@
 GOLANGCI_LINT_VERSION := v2.15.0
 GOBIN := $(shell go env GOPATH)/bin
 
-# App version (semver, e.g. 0.1.2-alpha). The default lives in Go
-# (version.Default in internal/app/version/version.go); set it for a build with e.g.
+# App version (semver, e.g. 0.1.2-alpha). build/config.yml's info.version is the
+# source of truth, read by the root Taskfile.yml. Override it for a build with e.g.
 #   make distribute VERSION=0.2.0-beta
-# Make exports command-line variables, so the Wails build (build/darwin/Taskfile.yml)
-# sees VERSION and stamps it into the binary with -ldflags -X.
+# Make exports command-line variables, so the Wails build sees VERSION and stamps
+# it into the binary with -ldflags -X.
 
 # Version checker; prints MAJOR.MINOR.PATCH (or the full version with -full).
 SEMVER := go run ./cmd/semver
@@ -18,17 +18,23 @@ dev:
 build:
 	wails3 build
 
-# Print the version a build would use.
+# Print the version a build would use; fails if it isn't valid semver.
 version:
-	@$(SEMVER) -full $(VERSION)
+	@wails3 task version
 
-# Validate VERSION and copy its MAJOR.MINOR.PATCH into build/config.yml, which
-# drives Info.plist (Apple allows only plain x.y.z there) and the Windows/Linux
-# package metadata. Fails before anything is built if VERSION isn't valid semver.
+# With VERSION set: validate it and copy its MAJOR.MINOR.PATCH into
+# build/config.yml, which drives Info.plist (Apple allows only plain x.y.z there);
+# commit that change as the version bump.
+# Without VERSION: just validate config.yml's version. Either way it fails before
+# anything is built if the version isn't valid semver.
 sync-version:
+ifdef VERSION
 	@core=$$($(SEMVER) $(VERSION)) || exit 1; \
 	sed -i '' -E "s/^(  version: )\"[^\"]*\"/\\1\"$$core\"/" build/config.yml; \
 	echo "Version $$($(SEMVER) -full $(VERSION)) (Info.plist: $$core)"
+else
+	@echo "Version (from build/config.yml):"; wails3 task version
+endif
 
 dmg: sync-version
 	wails3 task common:update:build-assets

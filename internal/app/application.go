@@ -23,7 +23,6 @@ func New(assets fs.FS, v version.Version) *application.App {
 		// Services are Go structs whose exported methods the frontend can call.
 		Services: []application.Service{
 			application.NewService(user.New()),
-			application.NewService(NewMenu()),
 			application.NewService(version.NewAbout(v)),
 		},
 		Assets: application.AssetOptions{

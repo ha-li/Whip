@@ -90,15 +90,15 @@ func TestMustParsePanics(t *testing.T) {
 	version.MustParse("not-a-version")
 }
 
-func TestCurrentDefault(t *testing.T) {
+func TestCurrentUnstamped(t *testing.T) {
 	t.Parallel()
 
-	// Unit tests aren't built with -ldflags -X, so current keeps its default.
+	// Unit tests aren't built with -ldflags -X, so current keeps its dev value.
 	v, err := version.Current()
 	if err != nil {
 		t.Fatalf("Current() error = %v", err)
 	}
-	if got := v.String(); got != version.Default {
-		t.Errorf("Current() = %q, want default %q", got, version.Default)
+	if got, want := v.String(), "0.0.0-dev"; got != want {
+		t.Errorf("Current() = %q, want %q", got, want)
 	}
 }

@@ -10,16 +10,13 @@ import (
 	"strings"
 )
 
-// current is the app version. It defaults to Default; release builds
-// override it at link time, e.g.:
+// current is the app version. The Wails build stamps it at link time from
+// build/config.yml (or VERSION=...), e.g.:
 //
 //	go build -ldflags "-X github.com/ha-li/Whip/internal/app/version.current=0.2.0-beta"
 //
-// (make dmg / make distribute VERSION=... does this for you.)
-var current = Default
-
-// Default is the version reported by builds that don't set one.
-const Default = "0.0.1"
+// Builds that don't stamp it (plain go build, go run, tests) report 0.0.0-dev.
+var current = "0.0.0-dev" //nolint:gochecknoglobals // -ldflags -X can only set a package-level var
 
 // Current returns the app version this binary was built with. It fails only
 // if the build injected a malformed version.

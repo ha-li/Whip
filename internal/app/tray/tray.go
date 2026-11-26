@@ -1,5 +1,4 @@
-// Package tray adds Whip's icon to the macOS menu bar (the system tray on
-// Windows and Linux) while the app is running.
+// Package tray adds Whip's icon to the macOS menu bar while the app is running.
 package tray
 
 import (
