@@ -57,16 +57,6 @@ func Parse(s string) (Version, error) {
 	return v, nil
 }
 
-// MustParse is like Parse but panics on an invalid version. Use it only for
-// versions fixed at build time.
-func MustParse(s string) Version {
-	v, err := Parse(s)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
 // String returns the full version, e.g. "0.1.2-alpha".
 func (v Version) String() string {
 	s := v.Core()
@@ -83,9 +73,4 @@ func (v Version) String() string {
 // fields only accept this form.
 func (v Version) Core() string {
 	return fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
-}
-
-// IsPrerelease reports whether v is a pre-release such as an alpha or beta.
-func (v Version) IsPrerelease() bool {
-	return v.Prerelease != ""
 }

@@ -61,33 +61,21 @@ func TestStringRoundTrip(t *testing.T) {
 	for _, in := range []string{"1.4.2", "0.1.2-alpha", "2.0.0-rc.1", "1.0.0-beta+20261125"} {
 		t.Run(in, func(t *testing.T) {
 			t.Parallel()
-			if got := version.MustParse(in).String(); got != in {
-				t.Errorf("MustParse(%q).String() = %q", in, got)
+			if got := mustParse(t, in).String(); got != in {
+				t.Errorf("Parse(%q).String() = %q", in, got)
 			}
 		})
 	}
 }
 
-func TestIsPrerelease(t *testing.T) {
-	t.Parallel()
-
-	if version.MustParse("1.0.0").IsPrerelease() {
-		t.Error(`"1.0.0" reported as a pre-release`)
+// mustParse parses s, failing the test if it isn't a valid version.
+func mustParse(t *testing.T, s string) version.Version {
+	t.Helper()
+	v, err := version.Parse(s)
+	if err != nil {
+		t.Fatalf("Parse(%q) error = %v", s, err)
 	}
-	if !version.MustParse("0.1.2-alpha").IsPrerelease() {
-		t.Error(`"0.1.2-alpha" not reported as a pre-release`)
-	}
-}
-
-func TestMustParsePanics(t *testing.T) {
-	t.Parallel()
-
-	defer func() {
-		if recover() == nil {
-			t.Error("MustParse did not panic on an invalid version")
-		}
-	}()
-	version.MustParse("not-a-version")
+	return v
 }
 
 func TestCurrentUnstamped(t *testing.T) {

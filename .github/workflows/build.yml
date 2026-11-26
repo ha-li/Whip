@@ -43,6 +43,10 @@ jobs:
       - name: Build universal DMG
         run: make dmg
 
+      # After the build: the app embeds frontend/dist, which the build creates.
+      - name: Dead code
+        run: make deadcode
+
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:

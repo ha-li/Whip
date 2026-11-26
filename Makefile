@@ -10,7 +10,7 @@ GOBIN := $(shell go env GOPATH)/bin
 # Version checker; prints MAJOR.MINOR.PATCH (or the full version with -full).
 SEMVER := go run ./cmd/semver
 
-.PHONY: dev build dmg distribute version sync-version clean lint install-lint
+.PHONY: dev build dmg distribute version sync-version clean lint deadcode install-lint
 
 dev:
 	wails3 dev
@@ -55,6 +55,15 @@ clean:
 
 lint:
 	$(GOBIN)/golangci-lint run ./...
+
+# Fail on functions unreachable from the app or cmd/ (exported ones included,
+# which golangci-lint can't see). Tests don't count as callers, so code that
+# only tests use is reported too. deadcode is pinned as a tool in go.mod.
+# Needs frontend/dist (the app embeds it): run make build or make dmg first.
+deadcode:
+	@out=$$(go tool deadcode -test=false . ./cmd/...) || exit 1; \
+	if [ -n "$$out" ]; then echo "$$out"; exit 1; fi; \
+	echo "No dead code."
 
 install-lint:
 	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(GOBIN) $(GOLANGCI_LINT_VERSION)

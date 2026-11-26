@@ -12,7 +12,7 @@ func TestAboutVersion(t *testing.T) {
 	for _, in := range []string{"1.4.2", "0.1.2-alpha"} {
 		t.Run(in, func(t *testing.T) {
 			t.Parallel()
-			if got := version.NewAbout(version.MustParse(in)).Version(); got != in {
+			if got := version.NewAbout(mustParse(t, in)).Version(); got != in {
 				t.Errorf("Version() = %q, want %q", got, in)
 			}
 		})
