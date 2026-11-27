@@ -1,4 +1,4 @@
-package portfolio_test
+package stocks_test
 
 import (
 	"path/filepath"
@@ -6,18 +6,18 @@ import (
 	"testing"
 
 	"github.com/ha-li/Whip/internal/db"
-	"github.com/ha-li/Whip/internal/portfolio"
+	"github.com/ha-li/Whip/internal/stocks"
 )
 
 // newNotes returns a Notes on a database in a temporary directory.
-func newNotes(t *testing.T) *portfolio.Notes {
+func newNotes(t *testing.T) *stocks.Notes {
 	t.Helper()
 	database, err := db.Open(filepath.Join(t.TempDir(), "data.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = database.Close() })
-	n, err := portfolio.New(t.Context(), database)
+	n, err := stocks.New(t.Context(), database)
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -25,7 +25,7 @@ func newNotes(t *testing.T) *portfolio.Notes {
 }
 
 // texts returns the notes' texts as "SYMBOL: text", sorted.
-func texts(list []portfolio.Note) []string {
+func texts(list []stocks.Note) []string {
 	out := make([]string, len(list))
 	for i, n := range list {
 		out[i] = n.Symbol + ": " + n.Text

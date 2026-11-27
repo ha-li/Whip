@@ -3,34 +3,19 @@ package app
 import (
 	"sync"
 
+	"github.com/ha-li/Whip/internal/app/whipapp"
 	"github.com/ha-li/Whip/internal/config"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
-// settingsFile is the app's own settings file in its config directory. It
-// remembers the window, the open tab and the side menu's width between
-// launches; modules keep their settings in their own files.
-const settingsFile = "whip.yml"
-
-// settings is the contents of whip.yml.
-type settings struct {
-	// Window is where the main window was when Whip last quit; nil until then.
-	Window *windowBounds `yaml:"window,omitempty"`
-	// Tab is the id of the tab that was last open (see frontend/src/tabs.ts).
-	Tab string `yaml:"tab,omitempty"`
-	// SidebarWidth is the width of the side menu in CSS pixels; 0 until the
-	// user resizes it.
-	SidebarWidth int `yaml:"sidebar_width,omitempty"`
-}
-
 // windowTracker follows the main window's frame and saves it on quit, so the
 // next launch reopens the window where it was.
 type windowTracker struct {
-	settings *config.File[settings]
+	settings *config.File[whipapp.Settings]
 
 	mu     sync.Mutex
-	bounds *windowBounds // nil until the window moves or resizes
+	bounds *whipapp.WindowBounds // nil until the window moves or resizes
 }
 
 // track updates the frame whenever window moves or resizes. Frames while the
@@ -43,7 +28,7 @@ func (t *windowTracker) track(window *application.WebviewWindow) {
 		}
 		r := window.Bounds()
 		t.mu.Lock()
-		t.bounds = &windowBounds{X: r.X, Y: r.Y, Width: r.Width, Height: r.Height}
+		t.bounds = &whipapp.WindowBounds{X: r.X, Y: r.Y, Width: r.Width, Height: r.Height}
 		t.mu.Unlock()
 	}
 	window.OnWindowEvent(events.Common.WindowDidMove, update)
@@ -59,7 +44,7 @@ func (t *windowTracker) save() error {
 	if b == nil {
 		return nil
 	}
-	return t.settings.Update(func(s *settings) { s.Window = b })
+	return t.settings.Update(func(s *whipapp.Settings) { s.Window = b })
 }
 
 // keepOnScreen centres window if too little of it is on a display, e.g. when
@@ -73,8 +58,8 @@ func keepOnScreen(window *application.WebviewWindow) {
 			// For a window off every display, this is the main display.
 			screen, err := window.GetScreen()
 			r := window.Bounds()
-			b := windowBounds{X: r.X, Y: r.Y, Width: r.Width, Height: r.Height}
-			if err != nil || screen == nil || !b.visibleOn(screen.WorkArea) {
+			b := whipapp.WindowBounds{X: r.X, Y: r.Y, Width: r.Width, Height: r.Height}
+			if err != nil || screen == nil || !b.VisibleOn(screen.WorkArea) {
 				window.Center()
 			}
 		})

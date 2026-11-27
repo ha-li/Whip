@@ -15,10 +15,10 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 import * as $models from "./models.js";
 
 /**
- * Add saves a new note and returns it.
+ * Add saves a new note with the given tags and returns it.
  */
-export function Add(title: string, text: string): $CancellablePromise<$models.Note> {
-    return $Call.ByID(871711360, title, text);
+export function Add(title: string, text: string, tags: string[] | null): $CancellablePromise<$models.Note> {
+    return $Call.ByID(871711360, title, text, tags);
 }
 
 /**
@@ -63,9 +63,26 @@ export function Restore(id: string): $CancellablePromise<$models.Note> {
 }
 
 /**
- * Update replaces the title and text of the note with the given ID and
+ * SetTagColor gives tag the palette colour with the given name, or takes its
+ * colour away if color is "". The tag needn't be on any note yet. It returns
+ * the tag as stored (see Note.Tags).
+ */
+export function SetTagColor(tag: string, color: string): $CancellablePromise<string> {
+    return $Call.ByID(687747256, tag, color);
+}
+
+/**
+ * TagColors returns the colour given to each tag that has one, as tag →
+ * palette colour name. Tags without a colour aren't in the map.
+ */
+export function TagColors(): $CancellablePromise<{ [_ in string]?: string } | null> {
+    return $Call.ByID(720617191);
+}
+
+/**
+ * Update replaces the title, text and tags of the note with the given ID and
  * returns it.
  */
-export function Update(id: string, title: string, text: string): $CancellablePromise<$models.Note> {
-    return $Call.ByID(3417553848, id, title, text);
+export function Update(id: string, title: string, text: string, tags: string[] | null): $CancellablePromise<$models.Note> {
+    return $Call.ByID(3417553848, id, title, text, tags);
 }

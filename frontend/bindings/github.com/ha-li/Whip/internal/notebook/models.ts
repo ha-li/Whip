@@ -10,6 +10,12 @@ export interface Note {
     "text": string;
 
     /**
+     * Tags label the note, e.g. "work". They are lower case, sorted and
+     * distinct; never nil in notes Notebook returns.
+     */
+    "tags": string[] | null;
+
+    /**
      * Created and Updated are when the note was added and last edited.
      */
     "created": string;

@@ -1,7 +1,7 @@
-// Package portfolio keeps the user's notes about stocks: several notes per
+// Package stocks keeps the user's notes about stocks: several notes per
 // ticker symbol. It owns the stock_notes collection in the app's database
 // (see package db).
-package portfolio
+package stocks
 
 import (
 	"cmp"

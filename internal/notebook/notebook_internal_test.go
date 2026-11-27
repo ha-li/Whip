@@ -50,7 +50,7 @@ func TestListNewestFirst(t *testing.T) {
 	n := newTestNotebook(t)
 	ctx := t.Context()
 	for _, text := range []string{"first", "second", "third"} {
-		if _, err := n.Add(ctx, "Title", text); err != nil {
+		if _, err := n.Add(ctx, "Title", text, nil); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -60,7 +60,7 @@ func TestListNewestFirst(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := n.Update(ctx, list[2].ID, "Title", "first, edited"); err != nil {
+	if _, err := n.Update(ctx, list[2].ID, "Title", "first, edited", nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -76,7 +76,7 @@ func TestDeleteKeepsNote(t *testing.T) {
 	n := newTestNotebook(t)
 	ctx := t.Context()
 
-	note, err := n.Add(ctx, "Title", "text")
+	note, err := n.Add(ctx, "Title", "text", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +112,7 @@ func TestListDeletedAndRestore(t *testing.T) {
 
 	add := func(text string) Note {
 		t.Helper()
-		note, err := n.Add(ctx, "Title", text)
+		note, err := n.Add(ctx, "Title", text, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -170,7 +170,7 @@ func TestEmptyTrash(t *testing.T) {
 	}
 	var notes []Note
 	for _, text := range []string{"keep", "trash 1", "trash 2"} {
-		note, err := n.Add(ctx, "Title", text)
+		note, err := n.Add(ctx, "Title", text, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -193,5 +193,33 @@ func TestEmptyTrash(t *testing.T) {
 	list, err := n.List(ctx)
 	if got, want := textsOf(t, list, err), []string{"keep"}; !slices.Equal(got, want) {
 		t.Errorf("List() after EmptyTrash = %q, want %q", got, want)
+	}
+}
+
+// Notes saved before notes had tags come back with an empty list of tags,
+// not nil, so the frontend never sees null.
+func TestUntaggedNoteGetsTags(t *testing.T) {
+	t.Parallel()
+
+	n := newTestNotebook(t)
+	ctx := t.Context()
+
+	old := Note{ID: "old", Title: "Old", Text: "from before tags", Created: time.Now(), Updated: time.Now()}
+	if err := n.notes.Put(ctx, old); err != nil {
+		t.Fatal(err)
+	}
+	list, err := n.List(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list) != 1 || list[0].Tags == nil {
+		t.Errorf("List() = %+v, want the old note with non-nil Tags", list)
+	}
+	if err := n.Delete(ctx, old.ID); err != nil {
+		t.Fatal(err)
+	}
+	restored, err := n.Restore(ctx, old.ID)
+	if err != nil || restored.Tags == nil {
+		t.Errorf("Restore() = %+v, %v; want non-nil Tags", restored, err)
 	}
 }

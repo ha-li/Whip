@@ -1,5 +1,6 @@
-// Package notebook keeps the user's general notes: each has a title and
-// text. It owns the notebook collection in the app's database (see package
+// Package notebook keeps the user's general notes: each has a title, text
+// and tags, and each tag can have a colour from package palette. It owns the
+// notebook and notebook_tags collections in the app's database (see package
 // db).
 package notebook
 
@@ -15,19 +16,34 @@ import (
 	"unicode/utf8"
 
 	"github.com/ha-li/Whip/internal/db"
+	"github.com/ha-li/Whip/internal/palette"
 )
 
-// collection is the collection Notebook owns in the app's database.
-const collection = "notebook"
+// The collections Notebook owns in the app's database: the notes, and the
+// colours given to tags.
+const (
+	collection     = "notebook"
+	tagsCollection = "notebook_tags"
+)
 
-// maxTitle is the longest title, in characters, a note can have.
-const maxTitle = 200
+// Limits on a note's title and tags.
+const (
+	// maxTitle is the longest title, in characters, a note can have.
+	maxTitle = 200
+	// maxTags is the most tags a note can have.
+	maxTags = 10
+	// maxTag is the longest tag, in characters.
+	maxTag = 32
+)
 
 // Note is a dated note with a title.
 type Note struct {
 	ID    string `json:"id"`
 	Title string `json:"title"`
 	Text  string `json:"text"`
+	// Tags label the note, e.g. "work". They are lower case, sorted and
+	// distinct; never nil in notes Notebook returns.
+	Tags []string `json:"tags"`
 	// Created and Updated are when the note was added and last edited.
 	Created time.Time `json:"created"`
 	Updated time.Time `json:"updated"`
@@ -40,9 +56,20 @@ type Note struct {
 // DocumentID implements db.Document.
 func (n Note) DocumentID() string { return n.ID }
 
+// tagColor is the colour given to a tag, stored in notebook_tags.
+type tagColor struct {
+	Tag string `json:"tag"`
+	// Color is the name of a colour in package palette.
+	Color string `json:"color"`
+}
+
+// DocumentID implements db.Document.
+func (t tagColor) DocumentID() string { return t.Tag }
+
 // Notebook keeps the user's notes. It is bound to the frontend.
 type Notebook struct {
 	notes *db.Collection[Note]
+	tags  *db.Collection[tagColor]
 	now   func() time.Time
 }
 
@@ -52,11 +79,15 @@ func New(ctx context.Context, database *db.DB) (*Notebook, error) {
 }
 
 func newNotebook(ctx context.Context, database *db.DB, now func() time.Time) (*Notebook, error) {
-	c, err := db.OpenCollection[Note](ctx, database, collection)
+	notes, err := db.OpenCollection[Note](ctx, database, collection)
 	if err != nil {
 		return nil, err
 	}
-	return &Notebook{notes: c, now: now}, nil
+	tags, err := db.OpenCollection[tagColor](ctx, database, tagsCollection)
+	if err != nil {
+		return nil, err
+	}
+	return &Notebook{notes: notes, tags: tags, now: now}, nil
 }
 
 // List returns all notes that haven't been deleted, newest first.
@@ -77,6 +108,9 @@ func (n *Notebook) list(ctx context.Context, deleted bool, when func(Note) time.
 		return nil, err
 	}
 	notes := slices.DeleteFunc(all, func(note Note) bool { return (note.Deleted != nil) != deleted })
+	for i := range notes {
+		notes[i] = withTags(notes[i])
+	}
 	slices.SortFunc(notes, func(a, b Note) int {
 		if c := when(b).Compare(when(a)); c != 0 {
 			return c
@@ -89,24 +123,32 @@ func (n *Notebook) list(ctx context.Context, deleted bool, when func(Note) time.
 	return notes, nil
 }
 
-// Add saves a new note and returns it.
-func (n *Notebook) Add(ctx context.Context, title, text string) (Note, error) {
+// Add saves a new note with the given tags and returns it.
+func (n *Notebook) Add(ctx context.Context, title, text string, tags []string) (Note, error) {
 	title, text, err := clean(title, text)
 	if err != nil {
 		return Note{}, err
 	}
+	tags, err = cleanTags(tags)
+	if err != nil {
+		return Note{}, err
+	}
 	now := n.now().UTC()
-	note := Note{ID: rand.Text(), Title: title, Text: text, Created: now, Updated: now}
+	note := Note{ID: rand.Text(), Title: title, Text: text, Tags: tags, Created: now, Updated: now}
 	if err := n.notes.Put(ctx, note); err != nil {
 		return Note{}, fmt.Errorf("save note: %w", err)
 	}
 	return note, nil
 }
 
-// Update replaces the title and text of the note with the given ID and
+// Update replaces the title, text and tags of the note with the given ID and
 // returns it.
-func (n *Notebook) Update(ctx context.Context, id, title, text string) (Note, error) {
+func (n *Notebook) Update(ctx context.Context, id, title, text string, tags []string) (Note, error) {
 	title, text, err := clean(title, text)
+	if err != nil {
+		return Note{}, err
+	}
+	tags, err = cleanTags(tags)
 	if err != nil {
 		return Note{}, err
 	}
@@ -119,6 +161,7 @@ func (n *Notebook) Update(ctx context.Context, id, title, text string) (Note, er
 	}
 	note.Title = title
 	note.Text = text
+	note.Tags = tags
 	note.Updated = n.now().UTC()
 	if err := n.notes.Put(ctx, note); err != nil {
 		return Note{}, fmt.Errorf("save note: %w", err)
@@ -161,13 +204,13 @@ func (n *Notebook) Restore(ctx context.Context, id string) (Note, error) {
 		return Note{}, err
 	}
 	if note.Deleted == nil {
-		return note, nil
+		return withTags(note), nil
 	}
 	note.Deleted = nil
 	if err := n.notes.Put(ctx, note); err != nil {
 		return Note{}, fmt.Errorf("restore note: %w", err)
 	}
-	return note, nil
+	return withTags(note), nil
 }
 
 // EmptyTrash permanently removes every deleted note from the database and
@@ -203,4 +246,79 @@ func clean(title, text string) (string, string, error) {
 		return "", "", errors.New("the note is empty")
 	}
 	return title, text, nil
+}
+
+// TagColors returns the colour given to each tag that has one, as tag →
+// palette colour name. Tags without a colour aren't in the map.
+func (n *Notebook) TagColors(ctx context.Context) (map[string]string, error) {
+	all, err := n.tags.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	colors := make(map[string]string, len(all))
+	for _, t := range all {
+		colors[t.Tag] = t.Color
+	}
+	return colors, nil
+}
+
+// SetTagColor gives tag the palette colour with the given name, or takes its
+// colour away if color is "". The tag needn't be on any note yet. It returns
+// the tag as stored (see Note.Tags).
+func (n *Notebook) SetTagColor(ctx context.Context, tag, color string) (string, error) {
+	tags, err := cleanTags([]string{tag})
+	if err != nil {
+		return "", err
+	}
+	if len(tags) == 0 {
+		return "", errors.New("the tag is empty")
+	}
+	tag = tags[0]
+	if color == "" {
+		if err := n.tags.Delete(ctx, tag); err != nil {
+			return "", fmt.Errorf("clear tag colour: %w", err)
+		}
+		return tag, nil
+	}
+	if _, ok := palette.Lookup(color); !ok {
+		return "", fmt.Errorf("%q is not a palette colour", color)
+	}
+	if err := n.tags.Put(ctx, tagColor{Tag: tag, Color: color}); err != nil {
+		return "", fmt.Errorf("save tag colour: %w", err)
+	}
+	return tag, nil
+}
+
+// cleanTags returns tags trimmed, lower-cased, with runs of spaces made one,
+// without blanks or repeats, and sorted; or an error if a tag has a comma or
+// is too long, or there are too many. It never returns nil tags.
+func cleanTags(tags []string) ([]string, error) {
+	out := []string{}
+	for _, tag := range tags {
+		tag = strings.ToLower(strings.Join(strings.Fields(tag), " "))
+		switch {
+		case tag == "":
+			continue
+		case strings.Contains(tag, ","):
+			return nil, fmt.Errorf("the tag %q has a comma", tag)
+		case utf8.RuneCountInString(tag) > maxTag:
+			return nil, fmt.Errorf("the tag %q is longer than %d characters", tag, maxTag)
+		}
+		out = append(out, tag)
+	}
+	slices.Sort(out)
+	out = slices.Compact(out)
+	if len(out) > maxTags {
+		return nil, fmt.Errorf("a note can have at most %d tags", maxTags)
+	}
+	return out, nil
+}
+
+// withTags returns note with empty, non-nil tags if it has none, e.g. one
+// saved before notes had tags, so the frontend gets a list rather than null.
+func withTags(note Note) Note {
+	if note.Tags == nil {
+		note.Tags = []string{}
+	}
+	return note
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { Notes as NotesAPI, type Note } from '../../bindings/github.com/ha-li/Whip/internal/portfolio'
+import { Notes as NotesAPI, type Note } from '../../bindings/github.com/ha-li/Whip/internal/stocks'
 import { errorText, formatDateTime } from '../format'
 import { TrashIcon } from '../icons'
 import './Portfolio.css'

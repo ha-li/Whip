@@ -5,19 +5,20 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/ha-li/Whip/internal/app/whipapp"
 	"github.com/ha-li/Whip/internal/config"
 )
 
 // openSettings opens whip.yml in a temporary directory and returns it with
 // the directory.
-func openSettings(t *testing.T) (*config.File[settings], string) {
+func openSettings(t *testing.T) (*config.File[whipapp.Settings], string) {
 	t.Helper()
 	dir := t.TempDir()
 	store, err := config.NewStoreWith(config.WithConfigDir(dir))
 	if err != nil {
 		t.Fatal(err)
 	}
-	f, err := config.Open[settings](store, settingsFile)
+	f, err := config.Open[whipapp.Settings](store, whipapp.SettingsFile)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,7 +27,7 @@ func openSettings(t *testing.T) (*config.File[settings], string) {
 
 func readSettings(t *testing.T, dir string) string {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join(dir, settingsFile))
+	b, err := os.ReadFile(filepath.Join(dir, whipapp.SettingsFile))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +43,7 @@ func TestWindowTrackerSave(t *testing.T) {
 		if err := (&windowTracker{settings: f}).save(); err != nil {
 			t.Fatalf("save() error = %v", err)
 		}
-		if _, err := os.Stat(filepath.Join(dir, settingsFile)); !os.IsNotExist(err) {
+		if _, err := os.Stat(filepath.Join(dir, whipapp.SettingsFile)); !os.IsNotExist(err) {
 			t.Errorf("whip.yml exists (stat error = %v), want none when the window never moved", err)
 		}
 	})
@@ -53,7 +54,7 @@ func TestWindowTrackerSave(t *testing.T) {
 		if err := (&UI{settings: f}).SetLastTab("portfolio"); err != nil {
 			t.Fatal(err)
 		}
-		tracker := &windowTracker{settings: f, bounds: &windowBounds{X: 10, Y: 20, Width: 800, Height: 600}}
+		tracker := &windowTracker{settings: f, bounds: &whipapp.WindowBounds{X: 10, Y: 20, Width: 800, Height: 600}}
 		if err := tracker.save(); err != nil {
 			t.Fatalf("save() error = %v", err)
 		}
