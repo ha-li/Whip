@@ -1,5 +1,6 @@
 // Package notebook keeps the user's general notes: each has a title and
-// text. It owns the notes collection in the app's database (see package db).
+// text. It owns the notebook collection in the app's database (see package
+// db).
 package notebook
 
 import (
@@ -17,7 +18,7 @@ import (
 )
 
 // collection is the collection Notebook owns in the app's database.
-const collection = "notes"
+const collection = "notebook"
 
 // maxTitle is the longest title, in characters, a note can have.
 const maxTitle = 200

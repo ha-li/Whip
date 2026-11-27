@@ -1,4 +1,4 @@
-package notes
+package portfolio
 
 import (
 	"errors"

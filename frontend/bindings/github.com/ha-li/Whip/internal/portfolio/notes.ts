@@ -18,7 +18,7 @@ import * as $models from "./models.js";
  * Add saves a new note about symbol and returns it.
  */
 export function Add($symbol: string, text: string): $CancellablePromise<$models.Note> {
-    return $Call.ByID(730424778, $symbol, text);
+    return $Call.ByID(3251068667, $symbol, text);
 }
 
 /**
@@ -28,7 +28,7 @@ export function Add($symbol: string, text: string): $CancellablePromise<$models.
  * and changes nothing.
  */
 export function Delete(id: string): $CancellablePromise<void> {
-    return $Call.ByID(3527008940, id);
+    return $Call.ByID(2314418163, id);
 }
 
 /**
@@ -36,21 +36,21 @@ export function Delete(id: string): $CancellablePromise<void> {
  * returns how many it removed. Notes that aren't deleted are kept.
  */
 export function EmptyTrash(): $CancellablePromise<number> {
-    return $Call.ByID(2426983558);
+    return $Call.ByID(2557873545);
 }
 
 /**
  * List returns all notes that haven't been deleted, newest first.
  */
 export function List(): $CancellablePromise<$models.Note[] | null> {
-    return $Call.ByID(2191090615);
+    return $Call.ByID(3759705776);
 }
 
 /**
  * ListDeleted returns the deleted notes, most recently deleted first.
  */
 export function ListDeleted(): $CancellablePromise<$models.Note[] | null> {
-    return $Call.ByID(2791404544);
+    return $Call.ByID(3244018365);
 }
 
 /**
@@ -59,12 +59,12 @@ export function ListDeleted(): $CancellablePromise<$models.Note[] | null> {
  * that isn't deleted returns it unchanged.
  */
 export function Restore(id: string): $CancellablePromise<$models.Note> {
-    return $Call.ByID(2130257719, id);
+    return $Call.ByID(884282346, id);
 }
 
 /**
  * Update replaces the text of the note with the given ID and returns it.
  */
 export function Update(id: string, text: string): $CancellablePromise<$models.Note> {
-    return $Call.ByID(1440044030, id, text);
+    return $Call.ByID(3292427049, id, text);
 }

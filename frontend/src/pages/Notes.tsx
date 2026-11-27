@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react'
 import { Notebook, type Note } from '../../bindings/github.com/ha-li/Whip/internal/notebook'
 import { errorText, formatDateTime } from '../format'
 import { TrashIcon } from '../icons'
@@ -291,6 +291,84 @@ function Notes() {
   )
 }
 
+// useExpandable tracks whether a note's text is longer than its collapsed
+// height (10 lines) and whether the user has expanded it.
+function useExpandable(text: string) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+
+  // Measure while collapsed, again whenever the text or the width changes.
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || expanded) return;
+    const check = () => setOverflows(el.scrollHeight > el.clientHeight + 1);
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [text, expanded]);
+
+  const collapse = () => {
+    setExpanded(false);
+    if (ref.current) ref.current.scrollTop = 0;
+  };
+  return { ref, expanded, overflows, expand: () => setExpanded(true), collapse };
+}
+
+type NoteBodyProps = {
+  note: Note
+  className: string
+  // meta and buttons go below the title and the text.
+  meta: ReactNode
+  buttons: ReactNode
+}
+
+// NoteBody shows a note's title and its first 10 lines. Clicking a longer
+// note expands it to 50 lines, scrolling the rest; clicking its title or
+// "Show less" collapses it again.
+function NoteBody({ note, className, meta, buttons }: NoteBodyProps) {
+  const { ref, expanded, overflows, expand, collapse } = useExpandable(note.text);
+
+  const onClick = (e: MouseEvent<HTMLLIElement>) => {
+    if (!overflows || expanded) return;
+    // Leave clicks on buttons alone, and don't expand when ending a text selection.
+    if ((e.target as Element).closest('button')) return;
+    if (window.getSelection()?.toString()) return;
+    expand();
+  };
+
+  const classes = [className, overflows ? 'is-expandable' : '', expanded ? 'is-expanded' : ''].filter(Boolean).join(' ');
+  return (
+    <li className={classes} onClick={onClick}>
+      <h2 className="note-title">
+        {overflows ? (
+          <button
+            type="button"
+            className="note-title-button"
+            aria-expanded={expanded}
+            onClick={expanded ? collapse : expand}
+          >
+            {note.title}
+          </button>
+        ) : (
+          note.title
+        )}
+      </h2>
+      {meta}
+      <p ref={ref} className={`note-text ${expanded ? 'is-scrollable' : 'is-clamped'}`}>{note.text}</p>
+      <div className="note-buttons">
+        {buttons}
+        {overflows && (
+          <button type="button" className="link-button note-action" onClick={expanded ? collapse : expand}>
+            {expanded ? 'Show less' : 'Show more'}
+          </button>
+        )}
+      </div>
+    </li>
+  )
+}
+
 type NoteItemProps = {
   note: Note
   // isEditing is true while the note is open in the editor.
@@ -321,38 +399,38 @@ function NoteItem({ note, isEditing, onEdit, onDeleted, onError }: NoteItemProps
   const edited = note.updated !== note.created;
 
   return (
-    <li className={`note${isEditing ? ' is-editing' : ''}`}>
-      <h2 className="note-title">{note.title}</h2>
-      <div className="note-meta">
-        <time dateTime={note.created}>{formatDateTime(note.created)}</time>
-        {edited && <span title={`Edited ${formatDateTime(note.updated)}`}> · edited</span>}
-      </div>
-      <p className="note-text">{note.text}</p>
-      <div className="note-buttons">
-        {confirming ? (
-          <>
-            <span className="note-confirm">Delete this note?</span>
-            <button type="button" className="link-button note-action" onClick={del} disabled={busy}>
-              Delete
-            </button>
-            <button type="button" className="link-button note-action" onClick={() => setConfirming(false)}>
-              Keep
-            </button>
-          </>
-        ) : isEditing ? (
-          <span className="note-confirm">Editing above</span>
-        ) : (
-          <>
-            <button type="button" className="link-button note-action" onClick={() => onEdit(note)}>
-              Edit
-            </button>
-            <button type="button" className="link-button note-action" onClick={() => setConfirming(true)}>
-              Delete
-            </button>
-          </>
-        )}
-      </div>
-    </li>
+    <NoteBody
+      note={note}
+      className={`note${isEditing ? ' is-editing' : ''}`}
+      meta={
+        <div className="note-meta">
+          <time dateTime={note.created}>{formatDateTime(note.created)}</time>
+          {edited && <span title={`Edited ${formatDateTime(note.updated)}`}> · edited</span>}
+        </div>
+      }
+      buttons={confirming ? (
+        <>
+          <span className="note-confirm">Delete this note?</span>
+          <button type="button" className="link-button note-action" onClick={del} disabled={busy}>
+            Delete
+          </button>
+          <button type="button" className="link-button note-action" onClick={() => setConfirming(false)}>
+            Keep
+          </button>
+        </>
+      ) : isEditing ? (
+        <span className="note-confirm">Editing above</span>
+      ) : (
+        <>
+          <button type="button" className="link-button note-action" onClick={() => onEdit(note)}>
+            Edit
+          </button>
+          <button type="button" className="link-button note-action" onClick={() => setConfirming(true)}>
+            Delete
+          </button>
+        </>
+      )}
+    />
   )
 }
 
@@ -428,24 +506,26 @@ function TrashItem({ note, onRestored, onError }: TrashItemProps) {
   };
 
   return (
-    <li className="note is-trashed">
-      <h2 className="note-title">{note.title}</h2>
-      <div className="note-meta">
-        <time dateTime={note.created}>{formatDateTime(note.created)}</time>
-        {note.deleted && (
-          <>
-            {' · deleted '}
-            <time dateTime={note.deleted}>{formatDateTime(note.deleted)}</time>
-          </>
-        )}
-      </div>
-      <p className="note-text">{note.text}</p>
-      <div className="note-buttons">
+    <NoteBody
+      note={note}
+      className="note is-trashed"
+      meta={
+        <div className="note-meta">
+          <time dateTime={note.created}>{formatDateTime(note.created)}</time>
+          {note.deleted && (
+            <>
+              {' · deleted '}
+              <time dateTime={note.deleted}>{formatDateTime(note.deleted)}</time>
+            </>
+          )}
+        </div>
+      }
+      buttons={
         <button type="button" className="link-button note-action" onClick={restore} disabled={busy}>
           Restore
         </button>
-      </div>
-    </li>
+      }
+    />
   )
 }
 

@@ -1,7 +1,7 @@
-// Package notes keeps the user's notes about stocks: several notes per ticker
-// symbol. It owns the stock_notes collection in the app's database (see
-// package db).
-package notes
+// Package portfolio keeps the user's notes about stocks: several notes per
+// ticker symbol. It owns the stock_notes collection in the app's database
+// (see package db).
+package portfolio
 
 import (
 	"cmp"
@@ -19,7 +19,7 @@ import (
 
 // collection is the collection Notes owns in the app's database. Its name
 // predates this package and is kept so existing notes stay readable.
-const collection = "stock_notes"
+const collection = "stock_portfolio"
 
 // Note is a dated note about a stock.
 type Note struct {

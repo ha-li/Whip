@@ -14,7 +14,7 @@ import (
 	"github.com/ha-li/Whip/internal/db"
 	"github.com/ha-li/Whip/internal/motd"
 	"github.com/ha-li/Whip/internal/notebook"
-	"github.com/ha-li/Whip/internal/notes"
+	"github.com/ha-li/Whip/internal/portfolio"
 	"github.com/ha-li/Whip/internal/tasks"
 	"github.com/ha-li/Whip/internal/user"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -48,7 +48,7 @@ func New(assets fs.FS, v version.Version) (*application.App, error) {
 	if err != nil {
 		return nil, err
 	}
-	notesService, err := notes.New(context.Background(), database)
+	portfolioService, err := portfolio.New(context.Background(), database)
 	if err != nil {
 		return nil, errors.Join(err, database.Close())
 	}
@@ -96,7 +96,7 @@ func New(assets fs.FS, v version.Version) (*application.App, error) {
 		Services: []application.Service{
 			application.NewService(user.New()),
 			application.NewService(version.NewAbout(v)),
-			application.NewService(notesService),
+			application.NewService(portfolioService),
 			application.NewService(notebookService),
 			application.NewService(tasksService),
 			application.NewService(quotes),

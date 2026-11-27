@@ -9,8 +9,8 @@ import (
 )
 
 // settingsFile is the app's own settings file in its config directory. It
-// remembers the window and the open tab between launches; modules keep their
-// settings in their own files.
+// remembers the window, the open tab and the side menu's width between
+// launches; modules keep their settings in their own files.
 const settingsFile = "whip.yml"
 
 // settings is the contents of whip.yml.
@@ -19,6 +19,9 @@ type settings struct {
 	Window *windowBounds `yaml:"window,omitempty"`
 	// Tab is the id of the tab that was last open (see frontend/src/tabs.ts).
 	Tab string `yaml:"tab,omitempty"`
+	// SidebarWidth is the width of the side menu in CSS pixels; 0 until the
+	// user resizes it.
+	SidebarWidth int `yaml:"sidebar_width,omitempty"`
 }
 
 // windowTracker follows the main window's frame and saves it on quit, so the

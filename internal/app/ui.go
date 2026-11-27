@@ -1,8 +1,13 @@
 package app
 
-import "github.com/ha-li/Whip/internal/config"
+import (
+	"fmt"
 
-// UI remembers which tab the frontend has open. It is bound to the frontend.
+	"github.com/ha-li/Whip/internal/config"
+)
+
+// UI remembers which tab the frontend has open and how wide its side menu
+// is. It is bound to the frontend.
 type UI struct {
 	settings *config.File[settings]
 }
@@ -18,4 +23,19 @@ func (u *UI) LastTab() (string, error) {
 // SetLastTab saves id as the open tab.
 func (u *UI) SetLastTab(id string) error {
 	return u.settings.Update(func(s *settings) { s.Tab = id })
+}
+
+// SidebarWidth returns the side menu's width in CSS pixels as last saved, or
+// 0 if none was saved. The frontend keeps the width within its own limits.
+func (u *UI) SidebarWidth() (int, error) {
+	s, err := u.settings.Load()
+	return s.SidebarWidth, err
+}
+
+// SetSidebarWidth saves width, in CSS pixels, as the side menu's width.
+func (u *UI) SetSidebarWidth(width int) error {
+	if width <= 0 {
+		return fmt.Errorf("sidebar width %d is not positive", width)
+	}
+	return u.settings.Update(func(s *settings) { s.SidebarWidth = width })
 }
