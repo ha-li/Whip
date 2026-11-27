@@ -1,0 +1,26 @@
+/* ----- Tasks ---------------------------------------------------------------- */
+.tasks { max-width: 760px; }
+.tasks-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.tasks-new { display: flex; gap: 8px; margin-top: 20px; }
+.tasks-input { flex: 1; }
+.tasks-error { margin: 12px 0 0; color: var(--color-text); -webkit-user-select: text; user-select: text; }
+.tasks-error::before { content: "⚠ "; }
+.tasks-list { margin: 16px 0 0; padding: 0; list-style: none; }
+.task {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-border);
+}
+.task:last-child { border-bottom: none; }
+.task-check { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; cursor: pointer; }
+.task-check input { flex: 0 0 auto; width: 16px; height: 16px; margin: 2px 0 0; cursor: pointer; }
+.task-check input:disabled { cursor: default; }
+.task-text { line-height: 1.45; overflow-wrap: anywhere; -webkit-user-select: text; user-select: text; }
+.task.is-done .task-text { color: var(--color-text-muted); text-decoration: line-through; }
+.task-side { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
+.task-meta { font-size: 12.5px; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.task-action { font-size: 12.5px; color: var(--color-text-muted); }
+.task-action:disabled { opacity: 0.4; cursor: default; }
+.task-confirm { font-size: 12.5px; }

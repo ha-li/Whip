@@ -18,4 +18,11 @@ export interface Note {
      */
     "created": string;
     "updated": string;
+
+    /**
+     * Deleted is when the note was deleted, or nil if it wasn't. Deleted
+     * notes stay in the database but List leaves them out and they can't be
+     * edited.
+     */
+    "deleted"?: string | null;
 }

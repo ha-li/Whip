@@ -22,18 +22,44 @@ export function Add($symbol: string, text: string): $CancellablePromise<$models.
 }
 
 /**
- * Delete removes the note with the given ID. Deleting a note that's already
- * gone is not an error.
+ * Delete marks the note with the given ID as deleted. The note stays in the
+ * database with the time it was deleted, but List no longer returns it.
+ * Deleting a note that's already deleted, or doesn't exist, is not an error
+ * and changes nothing.
  */
 export function Delete(id: string): $CancellablePromise<void> {
     return $Call.ByID(3527008940, id);
 }
 
 /**
- * List returns all notes, newest first.
+ * EmptyTrash permanently removes every deleted note from the database and
+ * returns how many it removed. Notes that aren't deleted are kept.
+ */
+export function EmptyTrash(): $CancellablePromise<number> {
+    return $Call.ByID(2426983558);
+}
+
+/**
+ * List returns all notes that haven't been deleted, newest first.
  */
 export function List(): $CancellablePromise<$models.Note[] | null> {
     return $Call.ByID(2191090615);
+}
+
+/**
+ * ListDeleted returns the deleted notes, most recently deleted first.
+ */
+export function ListDeleted(): $CancellablePromise<$models.Note[] | null> {
+    return $Call.ByID(2791404544);
+}
+
+/**
+ * Restore undeletes the note with the given ID and returns it: List returns
+ * it again, in its original place, and it can be edited. Restoring a note
+ * that isn't deleted returns it unchanged.
+ */
+export function Restore(id: string): $CancellablePromise<$models.Note> {
+    return $Call.ByID(2130257719, id);
 }
 
 /**

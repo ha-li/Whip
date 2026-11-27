@@ -1,0 +1,64 @@
+/* ----- Portfolio ------------------------------------------------------------ */
+.notes {
+    display: flex;
+    flex-direction: column;
+    max-width: 760px;
+    /* Fill the page so the notes list scrolls on its own below the editor. */
+    height: 100%;
+}
+.notes > * { flex: 0 0 auto; }
+.notes-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.notes-controls { display: flex; align-items: center; gap: 12px; }
+.notes-filter { width: 160px; }
+.notes-new { margin-top: 20px; }
+.notes-symbol { width: 200px; margin-bottom: 8px; text-transform: uppercase; }
+.notes-symbol::placeholder { text-transform: none; }
+.notes-symbol:read-only { color: var(--color-text-muted); background: var(--color-hover); }
+.notes-editing { margin: 0 0 8px; font-size: 12.5px; font-weight: 600; }
+.notes-textarea {
+    display: block;
+    width: 100%;
+    height: 450px;
+    min-height: 72px;
+    padding: 8px 10px;
+    line-height: 1.45;
+    resize: vertical;
+}
+.notes-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 8px; }
+.notes-hint { font-size: 12.5px; color: var(--color-text-muted); }
+.notes-error { margin: 12px 0 0; color: var(--color-text); -webkit-user-select: text; user-select: text; }
+.notes-error::before { content: "⚠ "; }
+.notes-list {
+    /* Takes the height left under the editor and scrolls; on a short window
+       it keeps a usable minimum and the page scrolls instead. */
+    flex: 1 1 auto;
+    min-height: 200px;
+    overflow-y: auto;
+    margin: 20px 0 0;
+    padding: 0 8px 0 0;
+    list-style: none;
+}
+.note { padding: 14px 0; border-bottom: 1px solid var(--color-border); }
+.note:last-child { border-bottom: none; }
+/* The note open in the editor. */
+.note.is-editing { opacity: 0.55; }
+/* A deleted note in the trash view. */
+.note.is-trashed .note-text { color: var(--color-text-muted); }
+.notes-trash-toggle { display: inline-flex; align-items: center; justify-content: center; }
+.notes-trash-toggle .icon { width: 15px; height: 15px; }
+.notes-empty-trash { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 16px; }
+.note-meta { font-size: 12.5px; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.note-symbol { font-size: inherit; font-weight: 600; color: var(--color-text); text-decoration: none; }
+.note-symbol:hover { text-decoration: underline; }
+.note-text {
+    margin: 4px 0 0;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    -webkit-user-select: text;
+    user-select: text;
+}
+.note-buttons { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+.note-action { font-size: 12.5px; color: var(--color-text-muted); }
+.note-action:disabled { opacity: 0.4; cursor: default; }
+.note-confirm { font-size: 12.5px; }

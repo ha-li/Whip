@@ -1,39 +1,12 @@
 /* ----- Notes ---------------------------------------------------------------- */
-.notes { max-width: 760px; }
-.notes-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
-.notes-filter { width: 160px; }
-.notes-new { margin-top: 20px; }
-.notes-symbol { width: 200px; margin-bottom: 8px; text-transform: uppercase; }
-.notes-symbol::placeholder { text-transform: none; }
-.notes-textarea {
-    display: block;
-    width: 100%;
-    height: auto;
-    min-height: 72px;
-    padding: 8px 10px;
-    line-height: 1.45;
-    resize: vertical;
-}
-.notes-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 8px; }
-.notes-hint { font-size: 12.5px; color: var(--color-text-muted); }
-.notes-error { margin: 12px 0 0; color: var(--color-text); -webkit-user-select: text; user-select: text; }
-.notes-error::before { content: "⚠ "; }
-.notes-list { margin: 20px 0 0; padding: 0; list-style: none; }
-.note { padding: 14px 0; border-bottom: 1px solid var(--color-border); }
-.note:last-child { border-bottom: none; }
-.note-meta { font-size: 12.5px; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
-.note-symbol { font-size: inherit; font-weight: 600; color: var(--color-text); text-decoration: none; }
-.note-symbol:hover { text-decoration: underline; }
-.note-text {
-    margin: 4px 0 0;
-    line-height: 1.5;
-    white-space: pre-wrap;
+/* The rest of the page's styles are shared with Portfolio (Portfolio.css). */
+.notes-title { display: block; width: 100%; margin-bottom: 8px; font-weight: 600; }
+.note-title {
+    margin: 0 0 2px;
+    font-size: 15px;
+    font-weight: 600;
     overflow-wrap: anywhere;
     -webkit-user-select: text;
     user-select: text;
 }
-.note-buttons { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
-.note-action { font-size: 12.5px; color: var(--color-text-muted); }
-.note-action:disabled { opacity: 0.4; cursor: default; }
-.note-confirm { font-size: 12.5px; }
-.note form { margin-top: 6px; }
+.note.is-trashed .note-title { color: var(--color-text-muted); }

@@ -152,12 +152,26 @@ func (c *Collection[T]) Get(ctx context.Context, id string) (T, error) {
 	return doc, nil
 }
 
-// Delete removes the document with the given ID. Deleting a document that
-// doesn't exist is not an error.
-func (c *Collection[T]) Delete(ctx context.Context, id string) error {
+// Delete permanently removes the documents with the given IDs, all of them
+// or, on error, none. IDs with no document are skipped.
+func (c *Collection[T]) Delete(ctx context.Context, ids ...string) (err error) {
+	tx, err := c.sql.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("delete from %s: %w", c.name, err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
 	q := fmt.Sprintf(`DELETE FROM %q WHERE id = ?`, c.name)
-	if _, err := c.sql.ExecContext(ctx, q, id); err != nil {
-		return fmt.Errorf("delete %s from %s: %w", id, c.name, err)
+	for _, id := range ids {
+		if _, err := tx.ExecContext(ctx, q, id); err != nil {
+			return fmt.Errorf("delete %s from %s: %w", id, c.name, err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("delete from %s: %w", c.name, err)
 	}
 	return nil
 }

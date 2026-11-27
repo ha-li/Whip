@@ -1,6 +1,7 @@
 package db_test
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -40,7 +41,7 @@ func openItems(t *testing.T, d *db.DB, name string) *db.Collection[item] {
 	return c
 }
 
-func TestPutGetDelete(t *testing.T) {
+func TestPutGet(t *testing.T) {
 	t.Parallel()
 
 	d := openDB(t)
@@ -68,17 +69,46 @@ func TestPutGetDelete(t *testing.T) {
 		t.Errorf("Get() after replacing = %+v, want %+v", got, want)
 	}
 
-	if err := c.Delete(ctx, "a"); err != nil {
-		t.Fatalf("Delete() error = %v", err)
-	}
-	if _, err := c.Get(ctx, "a"); !errors.Is(err, db.ErrNotFound) {
-		t.Errorf("Get() after Delete error = %v, want ErrNotFound", err)
-	}
-	if err := c.Delete(ctx, "a"); err != nil {
-		t.Errorf("Delete() of a missing ID error = %v, want nil", err)
-	}
 	if err := c.Put(ctx, item{}); err == nil {
 		t.Error("Put() with an empty ID succeeded, want error")
+	}
+}
+
+func TestDelete(t *testing.T) {
+	t.Parallel()
+
+	d := openDB(t)
+	c := openItems(t, d, "items")
+	ctx := t.Context()
+	for _, id := range []string{"a", "b", "c"} {
+		if err := c.Put(ctx, item{ID: id}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := c.Delete(ctx, "a", "c", "missing"); err != nil {
+		t.Fatalf("Delete() error = %v", err)
+	}
+	for _, id := range []string{"a", "c"} {
+		if _, err := c.Get(ctx, id); !errors.Is(err, db.ErrNotFound) {
+			t.Errorf("Get(%s) after Delete error = %v, want ErrNotFound", id, err)
+		}
+	}
+	if _, err := c.Get(ctx, "b"); err != nil {
+		t.Errorf("Get(b) error = %v, want the document kept", err)
+	}
+	if err := c.Delete(ctx); err != nil {
+		t.Errorf("Delete() of no IDs error = %v, want nil", err)
+	}
+
+	// A cancelled context deletes nothing.
+	cancelled, cancel := context.WithCancel(ctx)
+	cancel()
+	if err := c.Delete(cancelled, "b"); err == nil {
+		t.Error("Delete() with a cancelled context succeeded, want error")
+	}
+	if _, err := c.Get(ctx, "b"); err != nil {
+		t.Errorf("Get(b) after a failed Delete error = %v, want the document kept", err)
 	}
 }
 

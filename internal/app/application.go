@@ -12,7 +12,10 @@ import (
 	"github.com/ha-li/Whip/internal/app/version"
 	"github.com/ha-li/Whip/internal/config"
 	"github.com/ha-li/Whip/internal/db"
+	"github.com/ha-li/Whip/internal/motd"
+	"github.com/ha-li/Whip/internal/notebook"
 	"github.com/ha-li/Whip/internal/notes"
+	"github.com/ha-li/Whip/internal/tasks"
 	"github.com/ha-li/Whip/internal/user"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -49,6 +52,18 @@ func New(assets fs.FS, v version.Version) (*application.App, error) {
 	if err != nil {
 		return nil, errors.Join(err, database.Close())
 	}
+	notebookService, err := notebook.New(context.Background(), database)
+	if err != nil {
+		return nil, errors.Join(err, database.Close())
+	}
+	tasksService, err := tasks.New(context.Background(), database)
+	if err != nil {
+		return nil, errors.Join(err, database.Close())
+	}
+	quotes, err := motd.New()
+	if err != nil {
+		return nil, errors.Join(err, database.Close())
+	}
 	appSettings, err := config.Open[settings](store, settingsFile)
 	if err != nil {
 		return nil, errors.Join(err, database.Close())
@@ -82,6 +97,9 @@ func New(assets fs.FS, v version.Version) (*application.App, error) {
 			application.NewService(user.New()),
 			application.NewService(version.NewAbout(v)),
 			application.NewService(notesService),
+			application.NewService(notebookService),
+			application.NewService(tasksService),
+			application.NewService(quotes),
 			application.NewService(&UI{settings: appSettings}),
 		},
 		Assets: application.AssetOptions{

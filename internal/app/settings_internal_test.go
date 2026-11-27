@@ -50,7 +50,7 @@ func TestWindowTrackerSave(t *testing.T) {
 	t.Run("keeps the tab", func(t *testing.T) {
 		t.Parallel()
 		f, dir := openSettings(t)
-		if err := (&UI{settings: f}).SetLastTab("notes"); err != nil {
+		if err := (&UI{settings: f}).SetLastTab("portfolio"); err != nil {
 			t.Fatal(err)
 		}
 		tracker := &windowTracker{settings: f, bounds: &windowBounds{X: 10, Y: 20, Width: 800, Height: 600}}
@@ -58,7 +58,7 @@ func TestWindowTrackerSave(t *testing.T) {
 			t.Fatalf("save() error = %v", err)
 		}
 		// "y" is quoted because YAML 1.1 reads a bare y as true.
-		want := "window:\n    x: 10\n    \"y\": 20\n    width: 800\n    height: 600\ntab: notes\n"
+		want := "window:\n    x: 10\n    \"y\": 20\n    width: 800\n    height: 600\ntab: portfolio\n"
 		if got := readSettings(t, dir); got != want {
 			t.Errorf("whip.yml =\n%s\nwant\n%s", got, want)
 		}

@@ -30,6 +30,10 @@ type Note struct {
 	// Created and Updated are when the note was added and last edited.
 	Created time.Time `json:"created"`
 	Updated time.Time `json:"updated"`
+	// Deleted is when the note was deleted, or nil if it wasn't. Deleted
+	// notes stay in the database but List leaves them out and they can't be
+	// edited.
+	Deleted *time.Time `json:"deleted,omitempty"`
 }
 
 // DocumentID implements db.Document.
@@ -54,14 +58,26 @@ func newNotes(ctx context.Context, database *db.DB, now func() time.Time) (*Note
 	return &Notes{notes: c, now: now}, nil
 }
 
-// List returns all notes, newest first.
+// List returns all notes that haven't been deleted, newest first.
 func (n *Notes) List(ctx context.Context) ([]Note, error) {
-	notes, err := n.notes.All(ctx)
+	return n.list(ctx, false, func(note Note) time.Time { return note.Created })
+}
+
+// ListDeleted returns the deleted notes, most recently deleted first.
+func (n *Notes) ListDeleted(ctx context.Context) ([]Note, error) {
+	return n.list(ctx, true, func(note Note) time.Time { return *note.Deleted })
+}
+
+// list returns the notes that are deleted (or not, as deleted says), latest
+// first by the time when returns.
+func (n *Notes) list(ctx context.Context, deleted bool, when func(Note) time.Time) ([]Note, error) {
+	all, err := n.notes.All(ctx)
 	if err != nil {
 		return nil, err
 	}
+	notes := slices.DeleteFunc(all, func(note Note) bool { return (note.Deleted != nil) != deleted })
 	slices.SortFunc(notes, func(a, b Note) int {
-		if c := b.Created.Compare(a.Created); c != 0 {
+		if c := when(b).Compare(when(a)); c != 0 {
 			return c
 		}
 		return cmp.Compare(b.ID, a.ID)
@@ -97,7 +113,7 @@ func (n *Notes) Update(ctx context.Context, id, text string) (Note, error) {
 		return Note{}, err
 	}
 	note, err := n.notes.Get(ctx, id)
-	if errors.Is(err, db.ErrNotFound) {
+	if errors.Is(err, db.ErrNotFound) || (err == nil && note.Deleted != nil) {
 		return Note{}, errors.New("the note no longer exists")
 	}
 	if err != nil {
@@ -111,10 +127,65 @@ func (n *Notes) Update(ctx context.Context, id, text string) (Note, error) {
 	return note, nil
 }
 
-// Delete removes the note with the given ID. Deleting a note that's already
-// gone is not an error.
+// Delete marks the note with the given ID as deleted. The note stays in the
+// database with the time it was deleted, but List no longer returns it.
+// Deleting a note that's already deleted, or doesn't exist, is not an error
+// and changes nothing.
 func (n *Notes) Delete(ctx context.Context, id string) error {
-	return n.notes.Delete(ctx, id)
+	note, err := n.notes.Get(ctx, id)
+	if errors.Is(err, db.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if note.Deleted != nil {
+		return nil
+	}
+	now := n.now().UTC()
+	note.Deleted = &now
+	if err := n.notes.Put(ctx, note); err != nil {
+		return fmt.Errorf("delete note: %w", err)
+	}
+	return nil
+}
+
+// Restore undeletes the note with the given ID and returns it: List returns
+// it again, in its original place, and it can be edited. Restoring a note
+// that isn't deleted returns it unchanged.
+func (n *Notes) Restore(ctx context.Context, id string) (Note, error) {
+	note, err := n.notes.Get(ctx, id)
+	if errors.Is(err, db.ErrNotFound) {
+		return Note{}, errors.New("the note no longer exists")
+	}
+	if err != nil {
+		return Note{}, err
+	}
+	if note.Deleted == nil {
+		return note, nil
+	}
+	note.Deleted = nil
+	if err := n.notes.Put(ctx, note); err != nil {
+		return Note{}, fmt.Errorf("restore note: %w", err)
+	}
+	return note, nil
+}
+
+// EmptyTrash permanently removes every deleted note from the database and
+// returns how many it removed. Notes that aren't deleted are kept.
+func (n *Notes) EmptyTrash(ctx context.Context) (int, error) {
+	trash, err := n.ListDeleted(ctx)
+	if err != nil {
+		return 0, err
+	}
+	ids := make([]string, len(trash))
+	for i, note := range trash {
+		ids[i] = note.ID
+	}
+	if err := n.notes.Delete(ctx, ids...); err != nil {
+		return 0, fmt.Errorf("empty trash: %w", err)
+	}
+	return len(ids), nil
 }
 
 // symbolPattern accepts ticker symbols such as "IBM", "BRK.B" or "TSCO.LON".
